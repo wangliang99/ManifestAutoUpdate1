@@ -7,24 +7,23 @@ import sqlite3
 import argparse
 import requests
 import traceback
-import requests
 from pathlib import Path
 from multiprocessing.pool import ThreadPool
 from multiprocessing.dummy import Pool, Lock
+requests.packages.urllib3.disable_warnings()
 
 
 lock = Lock()
 
 
 def get(sha, path):
-    url_list = [f'https://fastly.jsdelivr.net/gh/{repo}@{sha}/{path}',
-                f'https://ghproxy.com/https://raw.githubusercontent.com/{repo}/{sha}/{path}',
+    url_list = [f'https://ghproxy.com/https://raw.githubusercontent.com/{repo}/{sha}/{path}',
                 f'https://github.moeyy.xyz/https://raw.githubusercontent.com/{repo}/{sha}/{path}']
     retry = 3
     while True:
         for url in url_list:
             try:
-                r = requests.get(url)
+                r = requests.get(url,verify=False)
                 if r.status_code == 200:
                     return r.content
             except requests.exceptions.ConnectionError:
@@ -111,11 +110,11 @@ def get_steam_path():
 
 def main(app_id):
     url = f'https://api.github.com/repos/{repo}/branches/{app_id}'
-    r = requests.get(url)
+    r = requests.get(url,verify=False)
     if 'commit' in r.json():
         sha = r.json()['commit']['sha']
         url = r.json()['commit']['commit']['tree']['url']
-        r = requests.get(url)
+        r = requests.get(url,verify=False)
         if 'tree' in r.json():
             stool_add([(app_id, '1', None)])
             result_list = []
@@ -133,12 +132,14 @@ def main(app_id):
                         pool.terminate()
                     raise
             if all([result.successful() for result in result_list]):
-                print(f'入库成功: {app_id}感谢使用')
+                print(f'入库成功: {app_id}')
                 print('重启steam生效')
-                print('如通过付费方式获得此工具，联系QQ:3507420008')
-                print('严禁倒卖，仓库已开源于github.com/liaofulong/ManifestAutoUpdate')
+                print('此工具开源于https://github.com/liaofulong/ManifestAutoUpdate')
+                print('当前版本7.0，删除cdnjs的加速，因为在大陆简直反向加速，所以地方网络有可能无法访问Github API，请使用Steam++加速Github')
                 return True
-    print(f'入库失败: {app_id}非常遗憾')
+    print(f'入库失败: {app_id}')
+    print('此工具开源于https://github.com/liaofulong/ManifestAutoUpdate')
+    print('当前版本7.0，删除cdnjs的加速，因为在大陆简直反向加速，所以地方网络有可能无法访问Github API，请使用Steam++加速Github')
     return False
 
 
